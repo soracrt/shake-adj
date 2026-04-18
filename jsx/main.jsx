@@ -106,7 +106,10 @@ function moveKeyframe(prop, keyIndex, newTime) {
 
   try {
     prop.setInterpolationTypeAtKey(newIdx, inType, outType);
-    prop.setTemporalEaseAtKey(newIdx, inEase, outEase);
+    // Don't restore original speed — it was relative to old timing and causes
+    // spikes when keyframes are close. Speed=0 keeps tangents horizontal (safe).
+    var safeEase = [new KeyframeEase(0, 33)];
+    prop.setTemporalEaseAtKey(newIdx, safeEase, safeEase);
   } catch (e) { /* some props don't support easing */ }
 }
 
@@ -120,19 +123,13 @@ function retimeEffectKeyframes(effect, nullStartTime, peakTime, nullEndTime) {
     var prop = effect.property(p);
     if (!prop || prop.numKeys < 3) continue;
 
-    // Grab original times before any modification
     var t1 = prop.keyTime(1);
     var t2 = prop.keyTime(2);
     var t3 = prop.keyTime(3);
 
-    // Only retime if the preset actually has 3 keyframes in order
     if (t1 >= t2 || t2 >= t3) continue;
 
-    // Move KF3 first (highest index — doesn't affect lower indices)
     moveKeyframe(prop, 3, nullEndTime);
-    // Move KF1 first is risky if nullStartTime > t2; move KF2 next
-    // Re-find indices after KF3 move
-    // Simplest: after removing KF3, KF2 is still index 2, KF1 is still 1
     moveKeyframe(prop, 2, peakTime);
     moveKeyframe(prop, 1, nullStartTime);
   }
