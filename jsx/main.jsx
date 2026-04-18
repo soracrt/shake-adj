@@ -142,15 +142,19 @@ function retimeEffectKeyframes(effect, nullStartTime, peakTime, nullEndTime) {
     var v2 = prop.keyValue(2);
     var v3 = prop.keyValue(3);
 
-    // cubicBezier(0.52, 0.00, 0.74, 0.00) → KF1 out inf=52, KF2 in  inf=26
-    // cubicBezier(0.26, 1.00, 0.48, 1.00) → KF2 out inf=26, KF3 in inf=52
-    // speed=0 at KF2 keeps handles within the value range (non-zero speed
-    // causes AE to draw the outgoing handle above the peak for decreasing
-    // segments). Asymmetry comes entirely from the influence percentages.
-    var easeKF1Out = [new KeyframeEase(0, 52)];
-    var easeKF2In  = [new KeyframeEase(0, 26)];
-    var easeKF2Out = [new KeyframeEase(0, 26)];
-    var easeKF3In  = [new KeyframeEase(0, 52)];
+    var range12 = vecMag(v2, v1); if (range12 < 0.0001) range12 = 0.0001;
+    var range23 = vecMag(v3, v2); if (range23 < 0.0001) range23 = 0.0001;
+
+    // cubicBezier(0.52, 0.00, 0.74, 0.00): KF1→KF2
+    //   KF1 out: slope=0       → speed=0,              influence=52
+    //   KF2 in:  slope=1/0.26  → speed=3.846*range/T,  influence=26
+    // cubicBezier(0.26, 1.00, 0.48, 1.00): KF2→KF3
+    //   KF2 out: slope=1/0.26  → speed=3.846*range/T,  influence=26
+    //   KF3 in:  slope=0       → speed=0,              influence=52
+    var easeKF1Out = [new KeyframeEase(0,                      52)];
+    var easeKF2In  = [new KeyframeEase(3.846 * range12 / T12, 26)];
+    var easeKF2Out = [new KeyframeEase(3.846 * range23 / T23, 26)];
+    var easeKF3In  = [new KeyframeEase(0,                      52)];
 
     moveKeyframe(prop, 3, nullEndTime);
     moveKeyframe(prop, 2, peakTime);
