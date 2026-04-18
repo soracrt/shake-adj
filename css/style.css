@@ -1,7 +1,7 @@
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {
-  background: #1c1c1c;
+  background: #111;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -11,35 +11,66 @@ body {
 }
 
 #btnAdd {
-  width: calc(100% - 24px);
-  padding: 10px 0;
-  background: linear-gradient(180deg, #2e2e2e 0%, #252525 100%);
-  color: #c8c8c8;
-  border: 1px solid #3a3a3a;
-  border-bottom-color: #1a1a1a;
-  border-radius: 5px;
+  position: relative;
+  width: calc(100% - 32px);
+  padding: 13px 0;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background:
+    radial-gradient(ellipse 80% 40% at 50% 0%, rgba(255,255,255,0.13) 0%, transparent 100%),
+    linear-gradient(180deg, rgba(60,60,60,0.6) 0%, rgba(15,15,15,0.95) 100%);
+  box-shadow:
+    0 0 0 1px rgba(0,0,0,0.6),
+    0 4px 24px rgba(0,0,0,0.6),
+    inset 0 1px 0 rgba(255,255,255,0.15),
+    inset 0 -1px 0 rgba(0,0,0,0.4);
+  color: #fff;
   font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 1px;
+  font-weight: 700;
+  letter-spacing: 2.5px;
   text-transform: uppercase;
+  text-shadow:
+    0 0 8px rgba(255,255,255,1),
+    0 0 20px rgba(255,255,255,0.7),
+    0 0 40px rgba(255,255,255,0.4);
   cursor: pointer;
-  transition: background 0.1s, color 0.1s;
+  transition: all 0.15s ease;
+  overflow: hidden;
+}
+
+#btnAdd::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 10%; right: 10%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.5), transparent);
+  border-radius: 999px;
 }
 
 #btnAdd:hover {
-  background: linear-gradient(180deg, #383838 0%, #2e2e2e 100%);
-  color: #e8e8e8;
-  border-color: #484848;
-  border-bottom-color: #222;
+  border-color: rgba(255,255,255,0.3);
+  box-shadow:
+    0 0 0 1px rgba(0,0,0,0.6),
+    0 4px 32px rgba(0,0,0,0.7),
+    0 0 20px rgba(255,255,255,0.08),
+    inset 0 1px 0 rgba(255,255,255,0.2),
+    inset 0 -1px 0 rgba(0,0,0,0.4);
+  text-shadow:
+    0 0 10px rgba(255,255,255,1),
+    0 0 25px rgba(255,255,255,0.8),
+    0 0 50px rgba(255,255,255,0.5);
 }
 
 #btnAdd:active {
-  background: #1e1e1e;
-  color: #aaa;
-  border-color: #2a2a2a;
+  transform: scale(0.98);
+  box-shadow:
+    0 0 0 1px rgba(0,0,0,0.6),
+    0 2px 12px rgba(0,0,0,0.6),
+    inset 0 1px 0 rgba(255,255,255,0.1);
 }
 
 #btnAdd:disabled {
-  opacity: 0.4;
+  opacity: 0.35;
   cursor: not-allowed;
+  transform: none;
 }
