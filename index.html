@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Shake Adj</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <h1>Shake Adj</h1>
+  <p class="subtitle">Auto-align shake to null layer peak</p>
+
+  <div class="section">
+    <div class="section-title">Options</div>
+    <div class="row">
+      <label>Property to scan</label>
+      <select id="propMode">
+        <option value="auto">Auto detect</option>
+        <option value="position">Position</option>
+        <option value="scale">Scale</option>
+        <option value="rotation">Rotation</option>
+      </select>
+    </div>
+    <div class="row">
+      <label>Preset</label>
+      <select id="presetName">
+        <option value="DS1">DS1</option>
+      </select>
+    </div>
+  </div>
+
+  <button class="btn-primary" id="btnAdd">Add Shakes</button>
+  <div id="status">Select null layer(s) and click Add Shakes.</div>
+
+  <script src="js/CSInterface.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>
