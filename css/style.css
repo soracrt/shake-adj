@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@600;700&display=swap');
+
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {
@@ -6,7 +8,7 @@ body {
   align-items: center;
   justify-content: center;
   height: 100vh;
-  font-family: "Adobe Clean", Arial, sans-serif;
+  font-family: "Inter", "Adobe Clean", Arial, sans-serif;
   user-select: none;
 }
 
@@ -25,10 +27,11 @@ body {
     inset 0 1px 0 rgba(255,255,255,0.15),
     inset 0 -1px 0 rgba(0,0,0,0.4);
   color: #fff;
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 2.5px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 3px;
   text-transform: uppercase;
+  font-family: "Inter", sans-serif;
   text-shadow:
     0 0 8px rgba(255,255,255,1),
     0 0 20px rgba(255,255,255,0.7),
