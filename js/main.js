@@ -11,13 +11,11 @@ document.getElementById("btnAdd").addEventListener("click", function () {
   btn.disabled = true;
   setStatus("Working...", "running");
 
-  var propMode = document.getElementById("propMode").value;
-  var presetName = document.getElementById("presetName").value;
   var extPath = csInterface.getSystemPath(SystemPath.EXTENSION);
 
   var args = JSON.stringify({
-    propMode: propMode,
-    presetPath: extPath + "/presets/" + presetName + ".ffx"
+    propMode: "auto",
+    presetPath: extPath + "/presets/DS1.ffx"
   });
 
   csInterface.evalScript('addShakes(' + JSON.stringify(args) + ')', function (result) {
