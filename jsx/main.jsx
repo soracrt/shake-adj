@@ -200,13 +200,13 @@ function addShakes(argsJson) {
       adjLayer.adjustmentLayer = true;
       adjLayer.moveBefore(nullLayer);
 
-      // Set in/out to match null's keyframe span (optional but clean)
-      adjLayer.inPoint  = nullStartTime;
-      adjLayer.outPoint = nullEndTime;
-
       // Apply preset at the null's start time
       comp.time = nullStartTime;
       adjLayer.applyPreset(presetFile);
+
+      // Set in/out AFTER preset (applyPreset can reset layer bounds)
+      adjLayer.inPoint  = nullStartTime;
+      adjLayer.outPoint = nullEndTime;
 
       // Find the S_DissolveShake effect (or whatever the preset added)
       var effect = null;
