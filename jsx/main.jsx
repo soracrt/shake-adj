@@ -44,39 +44,42 @@ function findAnimatedProp(layer, propMode) {
 
   if (props.length === 0) return null;
 
-  // Pick the one with the largest peak magnitude
+  // Pick the one with the highest peak velocity
   var best = null, bestMag = -1;
   for (var i = 0; i < props.length; i++) {
     var p = props[i];
-    var rest = restValue(p);
-    var startTime = p.keyTime(1);
-    var endTime   = p.keyTime(p.numKeys);
     var comp = layer.containingComp;
     var fps  = comp.frameRate;
-    var frame = startTime;
-    while (frame <= endTime) {
-      var m = magnitude(p.valueAtTime(frame, false), rest);
+    var frameLen = 1 / fps;
+    var startTime = p.keyTime(1);
+    var endTime   = p.keyTime(p.numKeys);
+    var t = startTime;
+    while (t <= endTime - frameLen) {
+      var m = magnitude(p.valueAtTime(t + frameLen, false), p.valueAtTime(t, false));
       if (m > bestMag) { bestMag = m; best = p; }
-      frame += 1 / fps;
+      t += frameLen;
     }
   }
   return best;
 }
 
-// Sample the property frame-by-frame and return the time of peak magnitude.
+// Sample the property frame-by-frame and return the time of peak velocity
+// (fastest rate of change), which is the steepest point on the graph curve.
 function findPeakTime(prop, comp) {
   var fps       = comp.frameRate;
+  var frameLen  = 1 / fps;
   var startTime = prop.keyTime(1);
   var endTime   = prop.keyTime(prop.numKeys);
-  var rest      = restValue(prop);
   var peakTime  = startTime;
   var peakMag   = -1;
 
   var t = startTime;
-  while (t <= endTime + 0.0001) {
-    var m = magnitude(prop.valueAtTime(t, false), rest);
+  while (t <= endTime - frameLen) {
+    var v1 = prop.valueAtTime(t, false);
+    var v2 = prop.valueAtTime(t + frameLen, false);
+    var m  = magnitude(v2, v1);
     if (m > peakMag) { peakMag = m; peakTime = t; }
-    t += 1 / fps;
+    t += frameLen;
   }
   return peakTime;
 }
