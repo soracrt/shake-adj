@@ -13,20 +13,6 @@ body {
   user-select: none;
 }
 
-h1 {
-  font-size: 14px;
-  font-weight: 600;
-  color: #e8e8e8;
-  margin-bottom: 4px;
-  letter-spacing: 0.5px;
-}
-
-.subtitle {
-  font-size: 10px;
-  color: #777;
-  margin-bottom: 16px;
-}
-
 .section {
   background: #252525;
   border: 1px solid #333;
