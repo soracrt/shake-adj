@@ -84,24 +84,12 @@ function findPeakTime(prop, comp) {
   return peakTime;
 }
 
-// Move a single keyframe to a new time, preserving value and interpolation type.
-// Ease is handled separately after all keyframes are placed.
-function moveKeyframe(prop, keyIndex, newTime) {
-  var val     = prop.keyValue(keyIndex);
-  var inType  = prop.keyInInterpolationType(keyIndex);
-  var outType = prop.keyOutInterpolationType(keyIndex);
-
-  prop.removeKey(keyIndex);
-  prop.setValueAtTime(newTime, val);
-
-  var newIdx = 1;
-  var minDiff = Math.abs(prop.keyTime(1) - newTime);
-  for (var i = 2; i <= prop.numKeys; i++) {
-    var diff = Math.abs(prop.keyTime(i) - newTime);
-    if (diff < minDiff) { minDiff = diff; newIdx = i; }
-  }
-
-  try { prop.setInterpolationTypeAtKey(newIdx, inType, outType); } catch(e) {}
+// Scale an ease array's speeds by a factor (to maintain curve shape at new timing).
+function scaleEase(easeArr, factor) {
+  var out = [];
+  for (var i = 0; i < easeArr.length; i++)
+    out.push(new KeyframeEase(easeArr[i].speed * factor, easeArr[i].influence));
+  return out;
 }
 
 // Vector magnitude helper for multi-dim or scalar values.
@@ -114,21 +102,10 @@ function vecMag(a, b) {
   return Math.abs(a - b);
 }
 
-// Retime the 3 preset keyframes and apply the exact cubic bezier easing:
-//   KF1 → KF2 : cubicBezier(0.52, 0.00, 0.74, 0.00)  — ease-in to peak
-//   KF2 → KF3 : cubicBezier(0.26, 1.00, 0.48, 1.00)  — ease-out from peak
-//
-// Cubic bezier → AE temporal ease conversion:
-//   slope at segment start  = y1/x1
-//   slope at segment end    = (1-y2)/(1-x2)
-//   AE speed = normalized_slope * (valueRange / segmentDuration)
-//   AE influence (%) = x-distance of the closer handle * 100
+// Retime the 3 preset keyframes to nullStartTime / peakTime / nullEndTime.
+// Preserves the preset's original ease shape by scaling speeds proportionally
+// to the new segment durations — no custom ease values are injected.
 function retimeEffectKeyframes(effect, nullStartTime, peakTime, nullEndTime) {
-  var T12 = peakTime - nullStartTime;
-  var T23 = nullEndTime - peakTime;
-  if (T12 < 0.001) T12 = 0.001;
-  if (T23 < 0.001) T23 = 0.001;
-
   for (var p = 1; p <= effect.numProperties; p++) {
     var prop = effect.property(p);
     if (!prop || prop.numKeys < 3) continue;
@@ -138,32 +115,42 @@ function retimeEffectKeyframes(effect, nullStartTime, peakTime, nullEndTime) {
     var t3 = prop.keyTime(3);
     if (t1 >= t2 || t2 >= t3) continue;
 
-    var v1 = prop.keyValue(1);
-    var v2 = prop.keyValue(2);
-    var v3 = prop.keyValue(3);
+    // Original segment durations
+    var origT12 = t2 - t1;
+    var origT23 = t3 - t2;
 
-    var range12 = vecMag(v2, v1); if (range12 < 0.0001) range12 = 0.0001;
-    var range23 = vecMag(v3, v2); if (range23 < 0.0001) range23 = 0.0001;
+    // New segment durations
+    var newT12 = peakTime - nullStartTime;
+    var newT23 = nullEndTime - peakTime;
+    if (newT12 < 0.001) newT12 = 0.001;
+    if (newT23 < 0.001) newT23 = 0.001;
 
-    // cubicBezier(0.52, 0.00, 0.74, 0.00): KF1→KF2
-    //   KF1 out: slope=0       → speed=0,              influence=52
-    //   KF2 in:  slope=1/0.26  → speed=3.846*range/T,  influence=26
-    // cubicBezier(0.26, 1.00, 0.48, 1.00): KF2→KF3
-    //   KF2 out: slope=1/0.26  → speed=3.846*range/T,  influence=26
-    //   KF3 in:  slope=0       → speed=0,              influence=52
-    var easeKF1Out = [new KeyframeEase(0,                      52)];
-    var easeKF2In  = [new KeyframeEase(3.846 * range12 / T12, 26)];
-    var easeKF2Out = [new KeyframeEase(3.846 * range23 / T23, 26)];
-    var easeKF3In  = [new KeyframeEase(0,                      52)];
+    // Speed scale factors: old/new keeps the normalized curve shape identical
+    var scale12 = origT12 / newT12;
+    var scale23 = origT23 / newT23;
 
-    moveKeyframe(prop, 3, nullEndTime);
-    moveKeyframe(prop, 2, peakTime);
-    moveKeyframe(prop, 1, nullStartTime);
+    // Snapshot everything before touching keyframes
+    var v1 = prop.keyValue(1), v2 = prop.keyValue(2), v3 = prop.keyValue(3);
+    var it1i = prop.keyInInterpolationType(1),  it1o = prop.keyOutInterpolationType(1);
+    var it2i = prop.keyInInterpolationType(2),  it2o = prop.keyOutInterpolationType(2);
+    var it3i = prop.keyInInterpolationType(3),  it3o = prop.keyOutInterpolationType(3);
+    var e1o  = prop.keyOutTemporalEase(1);
+    var e2i  = prop.keyInTemporalEase(2),  e2o = prop.keyOutTemporalEase(2);
+    var e3i  = prop.keyInTemporalEase(3);
+
+    // Remove all, re-add at new times
+    prop.removeKey(3); prop.removeKey(2); prop.removeKey(1);
+    prop.setValueAtTime(nullStartTime, v1);
+    prop.setValueAtTime(peakTime,      v2);
+    prop.setValueAtTime(nullEndTime,   v3);
 
     try {
-      prop.setTemporalEaseAtKey(1, easeKF1Out, easeKF1Out);
-      prop.setTemporalEaseAtKey(2, easeKF2In,  easeKF2Out);
-      prop.setTemporalEaseAtKey(3, easeKF3In,  easeKF3In);
+      prop.setInterpolationTypeAtKey(1, it1i, it1o);
+      prop.setInterpolationTypeAtKey(2, it2i, it2o);
+      prop.setInterpolationTypeAtKey(3, it3i, it3o);
+      prop.setTemporalEaseAtKey(1, scaleEase(e1o, scale12), scaleEase(e1o, scale12));
+      prop.setTemporalEaseAtKey(2, scaleEase(e2i, scale12), scaleEase(e2o, scale23));
+      prop.setTemporalEaseAtKey(3, scaleEase(e3i, scale23), scaleEase(e3i, scale23));
     } catch(e) {}
   }
 }
