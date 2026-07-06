@@ -5,6 +5,40 @@
 function ok(msg)  { return JSON.stringify({ message: msg }); }
 function err(msg) { return JSON.stringify({ error: msg }); }
 
+// ─── Preset storage (outside the extension bundle — install.ps1 wipes it) ───
+
+// Read the user's saved presets file. Returns ok("") if it doesn't exist yet.
+function sa_readPresets() {
+  try {
+    var folder = new Folder(Folder.userData.fsName + "/ShakeAdj");
+    var file = new File(folder.fsName + "/presets.json");
+    if (!file.exists) return ok("");
+    file.encoding = "UTF-8";
+    file.open("r");
+    var contents = file.read();
+    file.close();
+    return ok(contents);
+  } catch (e) {
+    return err("Error reading presets: " + e.toString());
+  }
+}
+
+// Write the user's presets file, creating the ShakeAdj folder if needed.
+function sa_writePresets(jsonStr) {
+  try {
+    var folder = new Folder(Folder.userData.fsName + "/ShakeAdj");
+    if (!folder.exists) folder.create();
+    var file = new File(folder.fsName + "/presets.json");
+    file.encoding = "UTF-8";
+    file.open("w");
+    file.write(jsonStr);
+    file.close();
+    return ok("Presets saved.");
+  } catch (e) {
+    return err("Error writing presets: " + e.toString());
+  }
+}
+
 // Compute magnitude of a property value relative to a rest value.
 // Handles multi-dimensional (arrays) and scalar values.
 function magnitude(val, rest) {
@@ -155,6 +189,119 @@ function retimeEffectKeyframes(effect, nullStartTime, peakTime, nullEndTime) {
   }
 }
 
+// Find the S_DissolveShake effect on an effects group by name/matchName
+// (falls back to the first effect if Sapphire's naming differs, preserving
+// the previous "first effect" behavior). Returns null if there are no effects.
+function findEffectByName(effectsGroup) {
+  var numFx = effectsGroup.numProperties;
+  if (numFx === 0) return null;
+
+  var fallback = null;
+  for (var i = 1; i <= numFx; i++) {
+    var effect = effectsGroup.property(i);
+    if (!effect) continue;
+    if (!fallback) fallback = effect;
+
+    var nm = (effect.name || "").toLowerCase();
+    var mn = (effect.matchName || "").toLowerCase();
+    if (nm.indexOf("dissolveshake") !== -1 || mn.indexOf("dissolveshake") !== -1) {
+      return effect;
+    }
+  }
+  return fallback;
+}
+
+// Recursively search an effect/group's properties for one whose display
+// name exactly matches. Returns null if not found or on any traversal error.
+function findPropByName(group, name) {
+  try {
+    if (!group || !group.numProperties) return null;
+    for (var i = 1; i <= group.numProperties; i++) {
+      var prop = group.property(i);
+      if (!prop) continue;
+      if (prop.name === name) return prop;
+
+      var isGroup = false;
+      try {
+        isGroup = (prop.propertyType === PropertyType.INDEXED_GROUP ||
+                   prop.propertyType === PropertyType.NAMED_GROUP);
+      } catch (eg) {
+        isGroup = false;
+      }
+      if (isGroup) {
+        var found = findPropByName(prop, name);
+        if (found) return found;
+      }
+    }
+  } catch (e) {
+    return null;
+  }
+  return null;
+}
+
+// Apply the 4 user-facing shake params to the Sapphire effect's native
+// properties. amplitude/frequency/tilt are percentages (100 = baked
+// default), seed is an absolute integer. Returns {applied, skipped} counts.
+function applyParams(effect, params) {
+  var applied = 0, skipped = 0;
+
+  function setScaled(propName, k) {
+    try {
+      var prop = findPropByName(effect, propName);
+      if (!prop) { skipped++; return; }
+      if (prop.numKeys === 0) {
+        prop.setValue(prop.value * k);
+      } else {
+        for (var i = 1; i <= prop.numKeys; i++) {
+          prop.setValueAtTime(prop.keyTime(i), prop.keyValue(i) * k);
+        }
+      }
+      applied++;
+    } catch (e) {
+      skipped++;
+    }
+  }
+
+  if (params.amplitude !== undefined && params.amplitude !== null) {
+    var kAmp = params.amplitude / 100;
+    setScaled("X Shake", kAmp);
+    setScaled("Y Shake", kAmp);
+    setScaled("Z Shake", kAmp);
+  }
+
+  if (params.frequency !== undefined && params.frequency !== null) {
+    var kFreq = params.frequency / 100;
+    setScaled("Frequency", kFreq);
+    setScaled("X Wave Freq", kFreq);
+    setScaled("Y Wave Freq", kFreq);
+    setScaled("Z Wave Freq", kFreq);
+    setScaled("X Rand Freq", kFreq);
+    setScaled("Y Rand Freq", kFreq);
+    setScaled("Z Rand Freq", kFreq);
+  }
+
+  if (params.tilt !== undefined && params.tilt !== null) {
+    var kTilt = params.tilt / 100;
+    setScaled("Tilt Shake", kTilt);
+  }
+
+  if (params.seed !== undefined && params.seed !== null) {
+    try {
+      var seedProp = findPropByName(effect, "Seed");
+      if (seedProp) {
+        seedProp.setValue(Math.round(params.seed));
+        applied++;
+      } else {
+        skipped++;
+      }
+    } catch (e) {
+      skipped++;
+    }
+  }
+
+  return { applied: applied, skipped: skipped };
+}
+
 // ─── Main ────────────────────────────────────────────────────────────────────
 
 function addShakes(argsJson) {
@@ -162,6 +309,7 @@ function addShakes(argsJson) {
     var args     = JSON.parse(argsJson);
     var propMode = args.propMode;
     var presetPath = args.presetPath;
+    var params = args.params ? args.params : null;
 
     var presetFile = new File(presetPath);
     if (!presetFile.exists) {
@@ -190,6 +338,8 @@ function addShakes(argsJson) {
     app.beginUndoGroup("Add Shakes");
 
     var count = 0;
+    var sapphireMissing = 0;
+    var paramsApplied = 0, paramsSkipped = 0;
     for (var n = 0; n < nullLayers.length; n++) {
       var nullLayer = nullLayers[n];
 
@@ -225,14 +375,17 @@ function addShakes(argsJson) {
       adjLayer.inPoint  = nullStartTime;
       adjLayer.outPoint = nullEndTime;
 
-      // Find the S_DissolveShake effect (or whatever the preset added)
-      var effect = null;
-      for (var e = 1; e <= adjLayer.Effects.numProperties; e++) {
-        effect = adjLayer.Effects.property(e);
-        if (effect) break;
+      // Find the S_DissolveShake effect by name (or whatever the preset added)
+      var effect = findEffectByName(adjLayer.Effects);
+      if (!effect) { sapphireMissing++; continue; }
+
+      if (params) {
+        var res = applyParams(effect, params);
+        paramsApplied += res.applied;
+        paramsSkipped += res.skipped;
       }
 
-      if (effect && effect.numProperties > 0) {
+      if (effect.numProperties > 0) {
         retimeEffectKeyframes(effect, nullStartTime, peakTime, nullEndTime);
       }
 
@@ -241,8 +394,16 @@ function addShakes(argsJson) {
 
     app.endUndoGroup();
 
+    if (count === 0 && sapphireMissing > 0) {
+      return err("Boris FX Sapphire (S_DissolveShake) not found on the applied preset. Install Sapphire and try again.");
+    }
     if (count === 0) return err("No valid null layers found (need ≥2 keyframes).");
-    return ok("Added shake layers for " + count + " null layer" + (count > 1 ? "s" : "") + ".");
+
+    var msg = "Added shake layers for " + count + " null layer" + (count > 1 ? "s" : "") + ".";
+    if (params && paramsSkipped > 0) {
+      msg += " (" + paramsSkipped + " param" + (paramsSkipped > 1 ? "s" : "") + " not applied)";
+    }
+    return ok(msg);
 
   } catch (e) {
     try { app.endUndoGroup(); } catch(x) {}

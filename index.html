@@ -6,8 +6,71 @@
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-  <button id="btnAdd">Add Shakes</button>
+  <div id="viewMain" class="view">
+    <div class="header-row">
+      <span class="title">Shake Adj</span>
+      <button id="btnSettings" class="icon-btn" title="Settings">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="3"></circle>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+        </svg>
+      </button>
+    </div>
+    <select id="presetSelect"></select>
+    <button id="btnAdd">Add Shakes</button>
+  </div>
+
+  <div id="viewSettings" class="view hidden">
+    <div class="header-row">
+      <button id="btnBack" class="icon-btn text-btn" title="Back">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="15 18 9 12 15 6"></polyline>
+        </svg>
+        Back
+      </button>
+      <span class="title">Settings</span>
+    </div>
+
+    <div class="row">
+      <label for="range-amplitude">Amplitude</label>
+      <input type="range" id="range-amplitude" min="0" max="200" step="1">
+      <span id="val-amplitude" class="value">100</span>
+    </div>
+    <div class="row">
+      <label for="range-frequency">Frequency</label>
+      <input type="range" id="range-frequency" min="0" max="200" step="1">
+      <span id="val-frequency" class="value">100</span>
+    </div>
+    <div class="row">
+      <label for="range-tilt">Rotation / Tilt</label>
+      <input type="range" id="range-tilt" min="0" max="200" step="1">
+      <span id="val-tilt" class="value">100</span>
+    </div>
+    <div class="row row-seed">
+      <label for="range-seed">Seed</label>
+      <input type="range" id="range-seed" min="0" max="99999" step="1">
+      <span id="val-seed" class="value">12345</span>
+      <button id="btnDice" class="icon-btn" title="Randomize seed">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="18" height="18" rx="3"></rect>
+          <circle cx="8" cy="8" r="1.2" fill="currentColor"></circle>
+          <circle cx="16" cy="8" r="1.2" fill="currentColor"></circle>
+          <circle cx="12" cy="12" r="1.2" fill="currentColor"></circle>
+          <circle cx="8" cy="16" r="1.2" fill="currentColor"></circle>
+          <circle cx="16" cy="16" r="1.2" fill="currentColor"></circle>
+        </svg>
+      </button>
+    </div>
+
+    <input type="text" id="presetName" placeholder="Preset name">
+    <div class="btn-row">
+      <button id="btnSavePreset" class="secondary-btn">Save Preset</button>
+      <button id="btnDeletePreset" class="secondary-btn">Delete Preset</button>
+    </div>
+  </div>
+
   <script src="js/CSInterface.js"></script>
+  <script src="js/presets.js"></script>
   <script src="js/main.js"></script>
 </body>
 </html>
