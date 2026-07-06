@@ -23,7 +23,7 @@ $barLen  = $W
 # ── Detect install state ─────────────────────────────
 $extDir   = "$env:APPDATA\Adobe\CEP\extensions"
 $dest     = "$extDir\com.sora.shakeadj"
-$newVer   = "v1.1.0"
+$newVer   = "v1.0.0"
 $isUpdate = Test-Path $dest
 $oldVer   = $null
 
@@ -164,12 +164,10 @@ $requiredFiles = @(
     "index.html",
     "css\style.css",
     "js\main.js",
-    "js\presets.js",
     "js\CSInterface.js",
     "jsx\main.jsx",
     "CSXS\manifest.xml",
-    "presets\DS1.ffx",
-    "presets\defaults.json"
+    "presets\DS1.ffx"
 )
 
 $missing = @()
