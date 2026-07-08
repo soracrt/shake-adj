@@ -139,7 +139,7 @@ if ($isUpdate) {
 } else {
 
     Progress-Step "Enabling CEP debug mode" {
-        foreach ($ver in @("11","12")) {
+        foreach ($ver in @("6","7","8","9","10","11","12")) {
             $null = reg add "HKEY_CURRENT_USER\SOFTWARE\Adobe\CSXS.$ver" /v PlayerDebugMode /t REG_STRING /d 1 /f 2>&1
         }
     }
