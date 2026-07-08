@@ -5,13 +5,13 @@
   </ExtensionList>
   <ExecutionEnvironment>
     <HostList>
-      <Host Name="AEFT" Version="[17.0,27.0]"/>
+      <Host Name="AEFT" Version="[16.0,27.0]"/>
     </HostList>
     <LocaleList>
       <Locale Code="All"/>
     </LocaleList>
     <RequiredRuntimeList>
-      <RequiredRuntime Name="CSXS" Version="9.0"/>
+      <RequiredRuntime Name="CSXS" Version="8.0"/>
     </RequiredRuntimeList>
   </ExecutionEnvironment>
   <DispatchInfoList>
