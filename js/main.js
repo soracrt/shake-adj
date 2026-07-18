@@ -10,7 +10,13 @@ document.getElementById("btnAdd").addEventListener("click", function () {
     presetPath: extPath + "/presets/DS1.ffx"
   });
 
-  csInterface.evalScript('addShakes(' + JSON.stringify(args) + ')', function () {
+  csInterface.evalScript('addShakes(' + JSON.stringify(args) + ')', function (result) {
     btn.disabled = false;
+    try {
+      var res = JSON.parse(result);
+      if (res.error) alert(res.error);
+    } catch (e) {
+      alert("Shake Adj failed unexpectedly: " + result);
+    }
   });
 });
